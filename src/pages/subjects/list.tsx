@@ -21,12 +21,15 @@ const SubjectsList = () => {
   const departmentFilters = selectedDepartment === "all" ? [] : [
     { field: "department", operator: "eq" as const, value: selectedDepartment }
   ];
+  const searchFilters = searchQuery ? [
+    { field: "name", operator: "contains" as const, value: searchQuery }
+  ] : [];
 
   const subjectTable = useTable<Subject>({
     columns: useMemo<ColumnDef<Subject>[]>(() => [
       {
-        id: "code",
-        accessorKey: "code",
+        id: "courseCode",
+        accessorKey: "courseCode",
         size: 100,
         header: () => <p className='column-title'>Code</p>,
         cell: ({ getValue }) => <Badge>{getValue<string>()}</Badge>
@@ -59,9 +62,13 @@ const SubjectsList = () => {
       resource: "subjects",
       pagination: { pageSize: 10, mode: "server" },
       filters: {
-        permanent: [],
+        permanent: [...departmentFilters, ...searchFilters],
       },
-      sorters: {},
+      sorters: {
+        initial: [
+          { field: "id", order: "desc" },
+        ]
+      },
     }
   });
   
