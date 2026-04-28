@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DEPARTMENT_OPTIONS } from '@/constants';
+import { useDebounce } from '@/hooks/use-debounce';
 import { Subject } from '@/types';
 import { useTable } from '@refinedev/react-table';
 import { ColumnDef } from '@tanstack/react-table';
@@ -17,13 +18,23 @@ import { useMemo, useState } from 'react';
 const SubjectsList = () => {
   const [ searchQuery, setSearchQuery ] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
-  const departmentFilters = selectedDepartment === "all" ? [] : [
-    { field: "department", operator: "eq" as const, value: selectedDepartment }
-  ];
-  const searchFilters = searchQuery ? [
-    { field: "name", operator: "contains" as const, value: searchQuery }
-  ] : [];
+  const departmentFilters = useMemo(() => (
+    selectedDepartment === "all" ? [] : [
+      { field: "department", operator: "eq" as const, value: selectedDepartment }
+    ]
+  ), [selectedDepartment]);
+
+  const searchFilters = useMemo(() => (
+    debouncedSearch ? [
+      { field: "name", operator: "contains" as const, value: debouncedSearch }
+    ] : []
+  ), [debouncedSearch]);
+
+  const permanentFilters = useMemo(() => (
+    [ ...departmentFilters, ...searchFilters ]
+  ), [departmentFilters, searchFilters]);
 
   const subjectTable = useTable<Subject>({
     columns: useMemo<ColumnDef<Subject>[]>(() => [
@@ -62,7 +73,7 @@ const SubjectsList = () => {
       resource: "subjects",
       pagination: { pageSize: 10, mode: "server" },
       filters: {
-        permanent: [...departmentFilters, ...searchFilters],
+        permanent: permanentFilters,
       },
       sorters: {
         initial: [

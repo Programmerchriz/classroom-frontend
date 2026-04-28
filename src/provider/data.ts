@@ -7,30 +7,7 @@ import {
   GetListResponse,
 } from "@refinedev/core";
 import { Subject } from "@/types";
-
-export const mockSubjects: Subject[] = [
-  {
-    id: 1,
-    courseCode: "CSC 201",
-    name: "Data Structures",
-    department: "CS",
-    description: "Introduces core data structures and their practical use in building efficient software.",
-  },
-  {
-    id: 2,
-    courseCode: "MTH 205",
-    name: "Linear Algebra",
-    department: "Math",
-    description: "Covers matrices, vector spaces, and transformations used across science and engineering.",
-  },
-  {
-    id: 3,
-    courseCode: "ENG 210",
-    name: "Academic Writing",
-    department: "English",
-    description: "Builds clear academic writing skills with emphasis on argument structure and research-based essays.",
-  },
-];
+import { MOCK_SUBJECTS } from "@/constants/mock-data";
 
 const applyFilter = (subjects: Subject[], filter: CrudFilter): Subject[] => {
   if ("field" in filter === false) {
@@ -93,7 +70,7 @@ export const dataProvider: DataProvider = {
     GetListParams): Promise<GetListResponse<TData>> => {
     if (resource !== "subjects") return ({ data: [] as TData[], total: 0 });
 
-    const filteredSubjects = applyFilters(mockSubjects, filters);
+    const filteredSubjects = applyFilters(MOCK_SUBJECTS, filters);
     const sortedSubjects = applySorters(filteredSubjects, sorters);
     const current = pagination?.currentPage ?? 1;
     const pageSize = pagination?.pageSize ?? sortedSubjects.length;
