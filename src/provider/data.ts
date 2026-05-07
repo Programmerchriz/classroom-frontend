@@ -1,92 +1,42 @@
-import {
-  BaseRecord,
-  CrudFilter,
-  CrudSort,
-  DataProvider,
-  GetListParams,
-  GetListResponse,
-} from "@refinedev/core";
-import { Subject } from "@/types";
-import { MOCK_SUBJECTS } from "@/constants/mock-data";
+import { createDataProvider, CreateDataProviderOptions } from "@refinedev/rest";
+import { BACKEND_BASE_URL } from "@/constants";
+import { ListResponse } from "@/types";
 
-const applyFilter = (subjects: Subject[], filter: CrudFilter): Subject[] => {
-  if ("field" in filter === false) {
-    return subjects;
-  }
+const options: CreateDataProviderOptions = {
+  getList: {
+    getEndpoint: ({ resource }) => resource,
 
-  const { field, operator, value } = filter;
+    buildQueryParams: async ({resource, pagination, filters}) => {
+      const page = pagination?.currentPage ?? 1;
+      const pageSize = pagination?.pageSize ?? 10;
 
-  if (field === "department" && operator === "eq") {
-    return subjects.filter((subject) => subject.department === value);
-  }
+      const params: Record<string, string|number> = { page, limit: pageSize };
 
-  if (field === "name" && operator === "contains" && typeof value === "string") {
-    const query = value.toLowerCase();
-    return subjects.filter((subject) => subject.name.toLowerCase().includes(query));
-  }
+      filters?.forEach((filter) => {
+        const field = "field" in filter ? filter.field : "";
+        const value = String(filter.value);
 
-  return subjects;
-};
+        if (resource === "subjects") {
+          if (field === "department") params.department = value;
+          if (field === "name" || field === "code") params.search = value;
+        };
+      });
 
-const applyFilters = (subjects: Subject[], filters?: CrudFilter[]): Subject[] => {
-  if (!filters?.length) {
-    return subjects;
-  }
+      return (params);
+    },
 
-  return filters.reduce((result, filter) => applyFilter(result, filter), subjects);
-};
+    mapResponse: async (response) => {
+      const paylod: ListResponse = await response.json();
+      return (paylod.data ?? []);
+    },
 
-const applySorters = (subjects: Subject[], sorters?: CrudSort[]): Subject[] => {
-  if (!sorters?.length) {
-    return subjects;
-  }
-
-  return [ ...subjects ].sort((left, right) => {
-    for (const sorter of sorters) {
-      const leftValue = left[sorter.field as keyof Subject];
-      const rightValue = right[sorter.field as keyof Subject];
-
-      if (leftValue === rightValue) {
-        continue;
-      }
-
-      const direction = sorter.order === "desc" ? -1 : 1;
-
-      if (leftValue! < rightValue!) {
-        return -1 * direction;
-      }
-
-      if (leftValue! > rightValue!) {
-        return 1 * direction;
-      }
+    getTotalCount: async (response) => {
+      const payload: ListResponse = await response.json();
+      return (payload.pagination?.total ?? payload.data?.length ?? 0);
     }
-
-    return 0;
-  });
-};
-
-export const dataProvider: DataProvider = {
-  getList: async <TData extends BaseRecord = BaseRecord>({ resource, filters, sorters, pagination }:
-    GetListParams): Promise<GetListResponse<TData>> => {
-    if (resource !== "subjects") return ({ data: [] as TData[], total: 0 });
-
-    const filteredSubjects = applyFilters(MOCK_SUBJECTS, filters);
-    const sortedSubjects = applySorters(filteredSubjects, sorters);
-    const current = pagination?.currentPage ?? 1;
-    const pageSize = pagination?.pageSize ?? sortedSubjects.length;
-    const start = (current - 1) * pageSize;
-    const paginatedSubjects = sortedSubjects.slice(start, start + pageSize);
-
-    return ({
-      data: paginatedSubjects as unknown as TData[],
-      total: filteredSubjects.length
-    });
   },
-
-  getOne: async () => { throw new Error("This function is not present in mock") },
-  create: async () => { throw new Error("This function is not present in mock") },
-  update: async () => { throw new Error("This function is not present in mock") },
-  deleteOne: async () => { throw new Error("This function is not present in mock") },
-
-  getApiUrl: () => "",
 };
+
+const { dataProvider } = createDataProvider(BACKEND_BASE_URL, options);
+
+export { dataProvider };
