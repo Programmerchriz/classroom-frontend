@@ -1,19 +1,19 @@
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "@/constants";
-import { UploadWidgetValue } from "@/types";
+import { UploadWidgetProps, UploadWidgetValue } from "@/types";
 import { UploadCloud } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-const UploadWidget = ({ value = null, onChange, disabled = false }) => {
+const UploadWidget = ({ value = null, onChange, disabled = false }: UploadWidgetProps) => {
   const widgetRef = useRef<CloudinaryWidget | null>(null);
   const onChangeRef = useRef(onChange);
 
   const [preview, setPreview] = useState<UploadWidgetValue | null>(value);
-  const [deleteToken, setDeleteToken] = useState<string | null>(null);
-  const [isRemoving, setIsRemoving] = useState(false);
+  // const [deleteToken, setDeleteToken] = useState<string | null>(null);
+  // const [isRemoving, setIsRemoving] = useState(false);
 
   useEffect(() => {
     setPreview(value);
-    if (!value) setDeleteToken(null);
+    // if (!value) setDeleteToken(null);
   }, [value]);
 
   useEffect(() => {
@@ -34,14 +34,19 @@ const UploadWidget = ({ value = null, onChange, disabled = false }) => {
         maxFileSize: 5 * 1024 * 1024, // 5MB
         clientAllowedFormats: ["png", "jpg", "jpeg", "webp"],
       }, (error, result) => {
-        if (!error && result.event === "success") {
+        if (error) {
+          console.error("Cloudinary upload error:", error);
+          return;
+        }
+
+        if (result?.event === "success") {
           const payload: UploadWidgetValue = {
             url: result.info.secure_url,
             publicId: result.info.public_id,
           };
 
           setPreview(payload);
-          setDeleteToken(result.info.delete_token ?? null);
+          // setDeleteToken(result.info.delete_token ?? null);
           onChangeRef.current?.(payload);
         };
       });
@@ -64,7 +69,7 @@ const UploadWidget = ({ value = null, onChange, disabled = false }) => {
     if (!disabled) widgetRef.current?.open();
   };
 
-  const removeFromCloudinary = async () => {};
+  // const removeFromCloudinary = async () => {};
 
   return (
     <div className="space-y-2">
@@ -89,7 +94,7 @@ const UploadWidget = ({ value = null, onChange, disabled = false }) => {
               <UploadCloud className="icon" />
               <div>
                 <p>Click to upload photo</p>
-                <p>PNG, JPG up to 5MB</p>
+                <p>PNG, JPG, WEBP up to 5MB</p>
               </div>
             </div>
           </div>}
